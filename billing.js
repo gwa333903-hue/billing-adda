@@ -149,7 +149,9 @@ function selectPaymentMethod(method) {
         qrContainer.style.display = 'flex'; 
         
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        const upiLink = `upi://pay?pa=9883824529-3@axl&pn=Ankit_Sarkar&am=${total}&cu=INR`;
+        
+        // UPDATED: New Paytm UPI ID and Payee Name "adda"
+        const upiLink = `upi://pay?pa=paytm.s286395@pty&pn=adda&am=${total}&cu=INR`;
         
         qrcodeDiv.innerHTML = ''; // Clear previous QR
         
