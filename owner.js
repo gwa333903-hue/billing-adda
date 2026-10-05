@@ -1,5 +1,5 @@
 import { db, auth } from './firebase-config.js';
-import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+import { collection, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
 onAuthStateChanged(auth, (user) => {
@@ -64,7 +64,6 @@ function renderTransactions(txList) {
 }
 
 async function loadStock() {
-    // 1. Fetch Categories
     const catSnapshot = await getDocs(collection(db, "categories"));
     let categoriesList = [];
     catSnapshot.forEach(doc => { 
@@ -72,7 +71,6 @@ async function loadStock() {
     });
     categoriesList.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
-    // 2. Fetch Items
     const snapshot = await getDocs(collection(db, "items"));
     const tbody = document.getElementById('stock-list');
     tbody.innerHTML = '';
@@ -80,12 +78,10 @@ async function loadStock() {
     const items = [];
     snapshot.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
 
-    // 3. Render Table Category-wise
     categoriesList.forEach(cat => {
         let catItems = items.filter(item => item.categoryId === cat.id);
         if (catItems.length === 0) return;
 
-        // Sort items inside this category
         catItems.sort((a, b) => {
             const itemOrderA = Number(a.order) || 0;
             const itemOrderB = Number(b.order) || 0;
@@ -93,17 +89,16 @@ async function loadStock() {
             return a.name.localeCompare(b.name);
         });
 
-        // Add Category Header Row
         tbody.innerHTML += `
             <tr class="category-row">
                 <td colspan="4" style="padding:15px 10px;">${cat.name}</td>
             </tr>
         `;
 
-        // Add Item Rows
         catItems.forEach(item => {
             const currentStock = item.stock || 0;
             
+            // Pass the item name safely into the onClick function
             tbody.innerHTML += `
                 <tr>
                     <td>
@@ -116,14 +111,15 @@ async function loadStock() {
                         </span>
                     </td>
                     <td><input type="number" id="add-stock-${item.id}" placeholder="Qty" style="width: 70px;"></td>
-                    <td><button class="update-btn" onclick="window.updateItemStock('${item.id}', ${currentStock})">Update</button></td>
+                    <td><button class="update-btn" onclick="window.updateItemStock('${item.id}', \`${item.name}\`, ${currentStock})">Update</button></td>
                 </tr>
             `;
         });
     });
 }
 
-window.updateItemStock = async (itemId, currentStock) => {
+// Function now requires itemName so it can log it
+window.updateItemStock = async (itemId, itemName, currentStock) => {
     const inputField = document.getElementById(`add-stock-${itemId}`);
     const addedStock = Number(inputField.value);
     
@@ -131,7 +127,18 @@ window.updateItemStock = async (itemId, currentStock) => {
     
     try {
         const newStock = currentStock + addedStock;
+        
+        // 1. Update the actual stock
         await updateDoc(doc(db, "items", itemId), { stock: newStock });
+        
+        // 2. Add a record to the stock history log
+        await addDoc(collection(db, "stock_logs"), {
+            itemId: itemId,
+            itemName: itemName,
+            addedQty: addedStock,
+            date: new Date().toISOString()
+        });
+
         inputField.value = '';
         loadStock(); 
     } catch (err) {
