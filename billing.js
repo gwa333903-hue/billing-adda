@@ -72,10 +72,38 @@ function addToCart(item, selectedPrice, currentStock) {
     if (existing) {
         existing.qty++;
     } else {
-        cart.push({ id: item.id, name: item.name, price: selectedPrice, qty: 1, currentStock: currentStock });
+        cart.push({ id: item.id, name: item.name, price: selectedPrice, qty: 1, currentStock: currentStock, isManual: false });
     }
     renderCart();
 }
+
+// --- HANDLE MANUAL / OTHER ITEM ENTRY ---
+document.getElementById('add-manual-btn').addEventListener('click', () => {
+    const nameInput = document.getElementById('manual-name');
+    const priceInput = document.getElementById('manual-price');
+    
+    const price = Number(priceInput.value);
+    if (!price || price <= 0) {
+        alert("Please enter a valid amount!");
+        return;
+    }
+
+    // If name is left blank, default to "Other"
+    const itemName = nameInput.value.trim() !== "" ? nameInput.value.trim() : "Other";
+
+    // Add to cart as a manual entry (no stock id needed)
+    const existing = cart.find(c => c.isManual && c.name === itemName && c.price === price);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({ id: null, name: itemName, price: price, qty: 1, isManual: true });
+    }
+
+    // Clear inputs
+    nameInput.value = '';
+    priceInput.value = '';
+    renderCart();
+});
 
 function renderCart() {
     const list = document.getElementById('cart-list');
@@ -88,7 +116,7 @@ function renderCart() {
         list.innerHTML += `
             <div class="cart-item">
                 <div class="cart-item-info">
-                    <strong style="font-size:14px;">${c.name}</strong>
+                    <strong style="font-size:14px;">${c.name} ${c.isManual ? '<span style="color:#e67e22; font-size:11px;">(Manual)</span>' : ''}</strong>
                     <span style="font-size:13px; color:#666;">₹${c.price} x ${c.qty}</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -140,22 +168,18 @@ function selectPaymentMethod(method) {
     if (method === 'cash') {
         btnCash.classList.add('selected');
         btnOnline.classList.remove('selected');
-        qrContainer.style.display = 'none'; // Hide QR Code
+        qrContainer.style.display = 'none';
     } else {
         btnOnline.classList.add('selected');
         btnCash.classList.remove('selected');
         
-        // 1. SHOW the container FIRST
         qrContainer.style.display = 'flex'; 
         
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        
-        // UPDATED: New Paytm UPI ID and Payee Name "adda"
         const upiLink = `upi://pay?pa=paytm.s286395@pty&pn=adda&am=${total}&cu=INR`;
         
-        qrcodeDiv.innerHTML = ''; // Clear previous QR
+        qrcodeDiv.innerHTML = ''; 
         
-        // 2. Draw the QR Code after the box is visible
         setTimeout(() => {
             new QRCode(qrcodeDiv, {
                 text: upiLink,
@@ -182,6 +206,7 @@ btnConfirm.addEventListener('click', async () => {
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         
+        // Save transaction with item details (manual items will have their custom name or "Other")
         await addDoc(collection(db, "transactions"), {
             date: new Date().toISOString(),
             items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
@@ -189,12 +214,15 @@ btnConfirm.addEventListener('click', async () => {
             paymentMethod: selectedPaymentMethod 
         });
 
+        // Deduct stock only for regular items (skip manual items)
         const stockDeductions = {};
         cart.forEach(c => {
-            if (!stockDeductions[c.id]) {
-                stockDeductions[c.id] = { currentStock: c.currentStock, totalQtyToDeduct: 0 };
+            if (!c.isManual && c.id) {
+                if (!stockDeductions[c.id]) {
+                    stockDeductions[c.id] = { currentStock: c.currentStock, totalQtyToDeduct: 0 };
+                }
+                stockDeductions[c.id].totalQtyToDeduct += c.qty;
             }
-            stockDeductions[c.id].totalQtyToDeduct += c.qty;
         });
 
         for (const [itemId, data] of Object.entries(stockDeductions)) {
