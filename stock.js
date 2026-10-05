@@ -2,9 +2,11 @@ import { db, auth } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-// Ensure only owner can view this page
+// Allow ONLY Owner or Staff to view the page
 onAuthStateChanged(auth, (user) => {
-    if (!user || user.email !== 'adda@adda.com') window.location.href = "login.html";
+    if (!user || (user.email !== 'adda@adda.com' && user.email !== 'staff@adda.com')) {
+        window.location.href = "index.html";
+    }
 });
 
 async function loadStockLogs() {
