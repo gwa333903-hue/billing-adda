@@ -13,16 +13,40 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 });
 
 async function loadMenu() {
+    // 1. Fetch Categories first to know the sorting order
+    const catSnapshot = await getDocs(collection(db, "categories"));
+    const catCache = {};
+    catSnapshot.forEach(docSnap => {
+        catCache[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+    });
+
+    // 2. Fetch Items
     const snapshot = await getDocs(collection(db, "items"));
     const posMenu = document.getElementById('pos-menu');
     posMenu.innerHTML = '';
     
-    // Sort items alphabetically
     let itemsArray = [];
     snapshot.forEach(docSnap => {
         itemsArray.push({ id: docSnap.id, ...docSnap.data() });
     });
-    itemsArray.sort((a, b) => a.name.localeCompare(b.name));
+
+    // 3. Sort items by Category Order first, then Item Order
+    itemsArray.sort((a, b) => {
+        const catA = catCache[a.categoryId];
+        const catB = catCache[b.categoryId];
+        const orderA = catA ? (Number(catA.order) || 0) : 999;
+        const orderB = catB ? (Number(catB.order) || 0) : 999;
+        
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        const itemOrderA = Number(a.order) || 0;
+        const itemOrderB = Number(b.order) || 0;
+        if (itemOrderA !== itemOrderB) {
+            return itemOrderA - itemOrderB;
+        }
+        return a.name.localeCompare(b.name);
+    });
 
     itemsArray.forEach(item => {
         const currentStock = item.stock || 0;
@@ -37,14 +61,12 @@ async function loadMenu() {
             const card = document.createElement('div');
             card.className = 'item-card';
             
-            // We removed the grey-out effect, so it always looks clickable
             card.innerHTML = `
                 <h4>${item.name}</h4>
                 <p style="margin:0; color:#d35400; font-weight:bold; font-size:16px;">₹${basePrice}</p>
                 <span class="stock-badge" style="background:${currentStock <= 0 ? '#7f8c8d' : '#e74c3c'}">Stock: ${currentStock}</span>
             `;
             
-            // Allow adding to cart regardless of stock level
             card.onclick = () => {
                 addToCart(item, basePrice, currentStock);
             };
@@ -55,7 +77,6 @@ async function loadMenu() {
 }
 
 function addToCart(item, selectedPrice, currentStock) {
-    // We removed the blocker here, so it will always add to cart
     const existing = cart.find(c => c.id === item.id && c.price === selectedPrice);
     if (existing) {
         existing.qty++;
@@ -119,7 +140,6 @@ document.getElementById('complete-btn').addEventListener('click', async () => {
         });
 
         for (const [itemId, data] of Object.entries(stockDeductions)) {
-            // We removed the Math.max(0) limit, so this will now calculate negative numbers (e.g. 0 - 2 = -2)
             const newStock = data.currentStock - data.totalQtyToDeduct;
             await updateDoc(doc(db, "items", itemId), { stock: newStock });
         }

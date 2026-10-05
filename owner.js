@@ -64,6 +64,13 @@ function renderTransactions(txList) {
 }
 
 async function loadStock() {
+    // 1. Fetch Categories first
+    const catSnapshot = await getDocs(collection(db, "categories"));
+    const catCache = {};
+    catSnapshot.forEach(docSnap => {
+        catCache[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+    });
+
     const snapshot = await getDocs(collection(db, "items"));
     const tbody = document.getElementById('stock-list');
     tbody.innerHTML = '';
@@ -73,13 +80,35 @@ async function loadStock() {
         itemsArray.push({ id: docSnap.id, ...docSnap.data() });
     });
 
-    itemsArray.sort((a, b) => a.name.localeCompare(b.name));
+    // 2. Sort by Category Order, then Item Order
+    itemsArray.sort((a, b) => {
+        const catA = catCache[a.categoryId];
+        const catB = catCache[b.categoryId];
+        const orderA = catA ? (Number(catA.order) || 0) : 999;
+        const orderB = catB ? (Number(catB.order) || 0) : 999;
+        
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        const itemOrderA = Number(a.order) || 0;
+        const itemOrderB = Number(b.order) || 0;
+        if (itemOrderA !== itemOrderB) {
+            return itemOrderA - itemOrderB;
+        }
+        return a.name.localeCompare(b.name);
+    });
 
     itemsArray.forEach(item => {
         const currentStock = item.stock || 0;
+        const categoryName = catCache[item.categoryId] ? catCache[item.categoryId].name : "Unassigned";
+        
         tbody.innerHTML += `
             <tr>
-                <td><strong>${item.name}</strong></td>
+                <td>
+                    <strong>${item.name}</strong> 
+                    <span style="font-size:12px; color:#888;">[${categoryName}]</span><br>
+                    <span style="color:#666; font-size:13px;">(₹${item.price})</span>
+                </td>
                 <td style="text-align:center;">
                     <span style="background:${currentStock > 5 ? '#eafaf1' : '#fdedec'}; padding:4px 8px; border-radius:4px;">
                         ${currentStock}
@@ -96,7 +125,7 @@ window.updateItemStock = async (itemId, currentStock) => {
     const inputField = document.getElementById(`add-stock-${itemId}`);
     const addedStock = Number(inputField.value);
     
-    if (!addedStock || addedStock <= 0) return alert("Enter a valid quantity.");
+    if (!addedStock || addedStock === 0) return alert("Enter a valid quantity.");
     
     try {
         const newStock = currentStock + addedStock;
