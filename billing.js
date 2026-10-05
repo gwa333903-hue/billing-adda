@@ -46,6 +46,16 @@ async function loadMenu() {
 
         catItems.forEach(item => {
             const currentStock = item.stock || 0;
+            
+            // Determine stock badge background color:
+            // 0 -> Gray, Negative (< 0) -> Red, Positive (> 0) -> Green
+            let stockBgColor = '#27ae60'; // Green
+            if (currentStock === 0) {
+                stockBgColor = '#7f8c8d'; // Gray
+            } else if (currentStock < 0) {
+                stockBgColor = '#e74c3c'; // Red
+            }
+
             const priceList = item.price.toString().split(/[,\/]/);
 
             priceList.forEach(priceStr => {
@@ -57,7 +67,7 @@ async function loadMenu() {
                 card.innerHTML = `
                     <h4>${item.name}</h4>
                     <p style="margin:0; color:#d35400; font-weight:bold; font-size:16px;">₹${basePrice}</p>
-                    <span class="stock-badge" style="background:${currentStock <= 0 ? '#7f8c8d' : '#e74c3c'}">Stock: ${currentStock}</span>
+                    <span class="stock-badge" style="background:${stockBgColor}">Stock: ${currentStock}</span>
                 `;
                 
                 card.onclick = () => addToCart(item, basePrice, currentStock);
@@ -77,7 +87,6 @@ function addToCart(item, selectedPrice, currentStock) {
     renderCart();
 }
 
-// --- HANDLE MANUAL / OTHER ITEM ENTRY ---
 document.getElementById('add-manual-btn').addEventListener('click', () => {
     const nameInput = document.getElementById('manual-name');
     const priceInput = document.getElementById('manual-price');
@@ -88,10 +97,8 @@ document.getElementById('add-manual-btn').addEventListener('click', () => {
         return;
     }
 
-    // If name is left blank, default to "Other"
     const itemName = nameInput.value.trim() !== "" ? nameInput.value.trim() : "Other";
 
-    // Add to cart as a manual entry (no stock id needed)
     const existing = cart.find(c => c.isManual && c.name === itemName && c.price === price);
     if (existing) {
         existing.qty++;
@@ -99,7 +106,6 @@ document.getElementById('add-manual-btn').addEventListener('click', () => {
         cart.push({ id: null, name: itemName, price: price, qty: 1, isManual: true });
     }
 
-    // Clear inputs
     nameInput.value = '';
     priceInput.value = '';
     renderCart();
@@ -134,7 +140,6 @@ window.removeFromCart = (index) => {
     renderCart();
 }
 
-// --- MODAL LOGIC WITH UPI QR CODE ---
 const modal = document.getElementById('payment-modal');
 const btnCash = document.getElementById('pay-cash');
 const btnOnline = document.getElementById('pay-online');
@@ -196,7 +201,6 @@ function selectPaymentMethod(method) {
 btnCash.addEventListener('click', () => selectPaymentMethod('cash'));
 btnOnline.addEventListener('click', () => selectPaymentMethod('online'));
 
-// --- COMPLETE PAYMENT ---
 btnConfirm.addEventListener('click', async () => {
     if (cart.length === 0 || !selectedPaymentMethod) return;
     
@@ -206,7 +210,6 @@ btnConfirm.addEventListener('click', async () => {
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         
-        // Save transaction with item details (manual items will have their custom name or "Other")
         await addDoc(collection(db, "transactions"), {
             date: new Date().toISOString(),
             items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
@@ -214,8 +217,16 @@ btnConfirm.addEventListener('click', async () => {
             paymentMethod: selectedPaymentMethod 
         });
 
-        // Deduct stock only for regular items (skip manual items)
         const stockDeductions = {};
+        cart.forEach(c => {
+            if (!c.isManual && c.id) {
+                if (!stockDeductions[c.id]) {
+                    stockDessions[c.id] = { currentStock: c.currentStock, totalQtyToDeduct: 0 }; // fixed reference below
+                }
+            }
+        });
+
+        // Clean stock deduction logic loop mapping
         cart.forEach(c => {
             if (!c.isManual && c.id) {
                 if (!stockDeductions[c.id]) {
