@@ -13,65 +13,61 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 });
 
 async function loadMenu() {
-    // 1. Fetch Categories first to know the sorting order
+    // 1. Fetch Categories
     const catSnapshot = await getDocs(collection(db, "categories"));
-    const catCache = {};
-    catSnapshot.forEach(docSnap => {
-        catCache[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+    let categoriesList = [];
+    catSnapshot.forEach(doc => { 
+        categoriesList.push({ id: doc.id, ...doc.data() }); 
     });
+    categoriesList.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
     // 2. Fetch Items
-    const snapshot = await getDocs(collection(db, "items"));
+    const itemSnapshot = await getDocs(collection(db, "items"));
+    const items = [];
+    itemSnapshot.forEach(doc => { items.push({ id: doc.id, ...doc.data() }); });
+
     const posMenu = document.getElementById('pos-menu');
     posMenu.innerHTML = '';
-    
-    let itemsArray = [];
-    snapshot.forEach(docSnap => {
-        itemsArray.push({ id: docSnap.id, ...docSnap.data() });
-    });
 
-    // 3. Sort items by Category Order first, then Item Order
-    itemsArray.sort((a, b) => {
-        const catA = catCache[a.categoryId];
-        const catB = catCache[b.categoryId];
-        const orderA = catA ? (Number(catA.order) || 0) : 999;
-        const orderB = catB ? (Number(catB.order) || 0) : 999;
-        
-        if (orderA !== orderB) {
-            return orderA - orderB;
-        }
-        const itemOrderA = Number(a.order) || 0;
-        const itemOrderB = Number(b.order) || 0;
-        if (itemOrderA !== itemOrderB) {
-            return itemOrderA - itemOrderB;
-        }
-        return a.name.localeCompare(b.name);
-    });
+    // 3. Render Items Category-wise
+    categoriesList.forEach(cat => {
+        let catItems = items.filter(item => item.categoryId === cat.id);
+        if (catItems.length === 0) return;
 
-    itemsArray.forEach(item => {
-        const currentStock = item.stock || 0;
-        
-        // Splits the price whether you type "9,14" OR "9/14"
-        const priceList = item.price.toString().split(/[,\/]/);
+        // Sort items within the category
+        catItems.sort((a, b) => {
+            const itemOrderA = Number(a.order) || 0;
+            const itemOrderB = Number(b.order) || 0;
+            if (itemOrderA !== itemOrderB) return itemOrderA - itemOrderB;
+            return a.name.localeCompare(b.name);
+        });
 
-        priceList.forEach(priceStr => {
-            const basePrice = Number(priceStr.trim());
-            if (isNaN(basePrice) || basePrice === 0) return;
+        // Add Category Header
+        const catHeader = document.createElement('h3');
+        catHeader.className = 'category-title';
+        catHeader.textContent = cat.name;
+        posMenu.appendChild(catHeader);
 
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            
-            card.innerHTML = `
-                <h4>${item.name}</h4>
-                <p style="margin:0; color:#d35400; font-weight:bold; font-size:16px;">₹${basePrice}</p>
-                <span class="stock-badge" style="background:${currentStock <= 0 ? '#7f8c8d' : '#e74c3c'}">Stock: ${currentStock}</span>
-            `;
-            
-            card.onclick = () => {
-                addToCart(item, basePrice, currentStock);
-            };
-            
-            posMenu.appendChild(card);
+        // Add Item Cards
+        catItems.forEach(item => {
+            const currentStock = item.stock || 0;
+            const priceList = item.price.toString().split(/[,\/]/);
+
+            priceList.forEach(priceStr => {
+                const basePrice = Number(priceStr.trim());
+                if (isNaN(basePrice) || basePrice === 0) return;
+
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <h4>${item.name}</h4>
+                    <p style="margin:0; color:#d35400; font-weight:bold; font-size:16px;">₹${basePrice}</p>
+                    <span class="stock-badge" style="background:${currentStock <= 0 ? '#7f8c8d' : '#e74c3c'}">Stock: ${currentStock}</span>
+                `;
+                
+                card.onclick = () => addToCart(item, basePrice, currentStock);
+                posMenu.appendChild(card);
+            });
         });
     });
 }

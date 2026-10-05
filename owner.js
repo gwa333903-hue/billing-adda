@@ -64,60 +64,62 @@ function renderTransactions(txList) {
 }
 
 async function loadStock() {
-    // 1. Fetch Categories first
+    // 1. Fetch Categories
     const catSnapshot = await getDocs(collection(db, "categories"));
-    const catCache = {};
-    catSnapshot.forEach(docSnap => {
-        catCache[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+    let categoriesList = [];
+    catSnapshot.forEach(doc => { 
+        categoriesList.push({ id: doc.id, ...doc.data() }); 
     });
+    categoriesList.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
+    // 2. Fetch Items
     const snapshot = await getDocs(collection(db, "items"));
     const tbody = document.getElementById('stock-list');
     tbody.innerHTML = '';
 
-    let itemsArray = [];
-    snapshot.forEach(docSnap => {
-        itemsArray.push({ id: docSnap.id, ...docSnap.data() });
-    });
+    const items = [];
+    snapshot.forEach(docSnap => { items.push({ id: docSnap.id, ...docSnap.data() }); });
 
-    // 2. Sort by Category Order, then Item Order
-    itemsArray.sort((a, b) => {
-        const catA = catCache[a.categoryId];
-        const catB = catCache[b.categoryId];
-        const orderA = catA ? (Number(catA.order) || 0) : 999;
-        const orderB = catB ? (Number(catB.order) || 0) : 999;
-        
-        if (orderA !== orderB) {
-            return orderA - orderB;
-        }
-        const itemOrderA = Number(a.order) || 0;
-        const itemOrderB = Number(b.order) || 0;
-        if (itemOrderA !== itemOrderB) {
-            return itemOrderA - itemOrderB;
-        }
-        return a.name.localeCompare(b.name);
-    });
+    // 3. Render Table Category-wise
+    categoriesList.forEach(cat => {
+        let catItems = items.filter(item => item.categoryId === cat.id);
+        if (catItems.length === 0) return;
 
-    itemsArray.forEach(item => {
-        const currentStock = item.stock || 0;
-        const categoryName = catCache[item.categoryId] ? catCache[item.categoryId].name : "Unassigned";
-        
+        // Sort items inside this category
+        catItems.sort((a, b) => {
+            const itemOrderA = Number(a.order) || 0;
+            const itemOrderB = Number(b.order) || 0;
+            if (itemOrderA !== itemOrderB) return itemOrderA - itemOrderB;
+            return a.name.localeCompare(b.name);
+        });
+
+        // Add Category Header Row
         tbody.innerHTML += `
-            <tr>
-                <td>
-                    <strong>${item.name}</strong> 
-                    <span style="font-size:12px; color:#888;">[${categoryName}]</span><br>
-                    <span style="color:#666; font-size:13px;">(₹${item.price})</span>
-                </td>
-                <td style="text-align:center;">
-                    <span style="background:${currentStock > 5 ? '#eafaf1' : '#fdedec'}; padding:4px 8px; border-radius:4px;">
-                        ${currentStock}
-                    </span>
-                </td>
-                <td><input type="number" id="add-stock-${item.id}" placeholder="Qty" style="width: 70px;"></td>
-                <td><button class="update-btn" onclick="window.updateItemStock('${item.id}', ${currentStock})">Update</button></td>
+            <tr class="category-row">
+                <td colspan="4" style="padding:15px 10px;">${cat.name}</td>
             </tr>
         `;
+
+        // Add Item Rows
+        catItems.forEach(item => {
+            const currentStock = item.stock || 0;
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>
+                        <strong>${item.name}</strong><br>
+                        <span style="color:#666; font-size:13px;">(₹${item.price})</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <span style="background:${currentStock > 5 ? '#eafaf1' : '#fdedec'}; padding:4px 8px; border-radius:4px;">
+                            ${currentStock}
+                        </span>
+                    </td>
+                    <td><input type="number" id="add-stock-${item.id}" placeholder="Qty" style="width: 70px;"></td>
+                    <td><button class="update-btn" onclick="window.updateItemStock('${item.id}', ${currentStock})">Update</button></td>
+                </tr>
+            `;
+        });
     });
 }
 

@@ -12,19 +12,18 @@
         .owner-btn { background: #e74c3c; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; }
         .logout-btn { background: transparent; color: #ccc; border: 1px solid #ccc; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
         
-        /* Mobile Layout: Stacked Vertically */
         .main-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         
-        /* Top: Menu Section */
         .menu-section { flex: 1.5; padding: 10px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; background: #eaeaec; }
         
-        /* Exactly 2 items per row */
+        /* New Category Header Style */
+        .category-title { width: 100%; margin: 15px 0 5px 0; color: #2c3e50; border-bottom: 2px solid #bdc3c7; font-size: 18px; padding-bottom: 5px; font-weight: bold; }
+        
         .item-card { background: white; padding: 12px 8px; border-radius: 8px; width: calc(50% - 5px); box-sizing: border-box; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; border: 2px solid transparent; }
         .item-card:hover, .item-card:active { border-color: #d35400; background-color: #fdf2e9; }
         .item-card h4 { margin: 0 0 5px; color: #333; font-size: 14px; line-height: 1.2; }
         .stock-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; display: inline-block; margin-top: 5px; }
         
-        /* Bottom: Cart Section */
         .cart-section { flex: 1; min-height: 250px; background: white; padding: 15px; border-top: 2px solid #ddd; display: flex; flex-direction: column; }
         .cart-items { flex: 1; overflow-y: auto; margin-bottom: 10px; border-bottom: 2px solid #eee; }
         .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
@@ -34,7 +33,6 @@
         .complete-btn { background: #27ae60; color: white; padding: 12px; font-size: 16px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; }
         .complete-btn:disabled { background: #95a5a6; cursor: not-allowed; }
 
-        /* Desktop Adjustments (keeps it nice if opened on PC) */
         @media (min-width: 768px) {
             .main-container { flex-direction: row; }
             .menu-section { flex: 2; padding: 20px; }
@@ -52,10 +50,7 @@
         </div>
     </header>
     <div class="main-container">
-        <!-- Top on mobile: Items -->
         <div class="menu-section" id="pos-menu"></div>
-        
-        <!-- Bottom on mobile: Cart -->
         <div class="cart-section">
             <div class="cart-items" id="cart-list"></div>
             <div class="total-box">Total: ₹<span id="cart-total">0</span></div>
