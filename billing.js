@@ -47,8 +47,7 @@ async function loadMenu() {
         catItems.forEach(item => {
             const currentStock = item.stock || 0;
             
-            // Determine stock badge background color:
-            // 0 -> Gray, Negative (< 0) -> Red, Positive (> 0) -> Green
+            // Stock badge color: 0 -> Gray, Negative (< 0) -> Red, Positive (> 0) -> Green
             let stockBgColor = '#27ae60'; // Green
             if (currentStock === 0) {
                 stockBgColor = '#7f8c8d'; // Gray
@@ -218,15 +217,6 @@ btnConfirm.addEventListener('click', async () => {
         });
 
         const stockDeductions = {};
-        cart.forEach(c => {
-            if (!c.isManual && c.id) {
-                if (!stockDeductions[c.id]) {
-                    stockDessions[c.id] = { currentStock: c.currentStock, totalQtyToDeduct: 0 }; // fixed reference below
-                }
-            }
-        });
-
-        // Clean stock deduction logic loop mapping
         cart.forEach(c => {
             if (!c.isManual && c.id) {
                 if (!stockDeductions[c.id]) {
