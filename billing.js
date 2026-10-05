@@ -145,21 +145,25 @@ function selectPaymentMethod(method) {
         btnOnline.classList.add('selected');
         btnCash.classList.remove('selected');
         
-        // Generate UPI QR Code
+        // 1. SHOW the container FIRST
+        qrContainer.style.display = 'flex'; 
+        
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         const upiLink = `upi://pay?pa=9883824529-3@axl&pn=Ankit_Sarkar&am=${total}&cu=INR`;
         
         qrcodeDiv.innerHTML = ''; // Clear previous QR
-        new QRCode(qrcodeDiv, {
-            text: upiLink,
-            width: 180,
-            height: 180,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
         
-        qrContainer.style.display = 'flex'; // Show QR Code
+        // 2. Draw the QR Code after the box is visible
+        setTimeout(() => {
+            new QRCode(qrcodeDiv, {
+                text: upiLink,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }, 50);
     }
 }
 
