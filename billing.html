@@ -6,40 +6,57 @@
     <title>Adda | Billing POS</title>
     <style>
         body { font-family: sans-serif; background: #f4f4f4; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .owner-btn { background: #e74c3c; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; }
-        .owner-btn:hover { background: #c0392b; }
-        .logout-btn { background: transparent; color: #ccc; border: 1px solid #ccc; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        header { background: #2c3e50; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
         
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        .menu-section { flex: 2; padding: 20px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 15px; align-content: flex-start; }
-        .item-card { background: white; padding: 15px; border-radius: 8px; width: calc(33% - 15px); min-width: 120px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; border: 2px solid transparent; }
-        .item-card:hover { border-color: #d35400; }
-        .item-card h4 { margin: 0 0 10px; color: #333; }
-        .stock-badge { background: #e74c3c; color: white; padding: 3px 8px; border-radius: 10px; font-size: 12px; display: inline-block; margin-top: 5px; }
+        .header-buttons { display: flex; gap: 10px; }
+        .owner-btn { background: #e74c3c; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        .logout-btn { background: transparent; color: #ccc; border: 1px solid #ccc; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
         
-        .cart-section { flex: 1; min-width: 300px; background: white; padding: 20px; border-left: 2px solid #ddd; display: flex; flex-direction: column; }
-        .cart-items { flex: 1; overflow-y: auto; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+        /* Mobile Layout: Stacked Vertically */
+        .main-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        
+        /* Top: Menu Section */
+        .menu-section { flex: 1.5; padding: 10px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; background: #eaeaec; }
+        
+        /* Exactly 2 items per row */
+        .item-card { background: white; padding: 12px 8px; border-radius: 8px; width: calc(50% - 5px); box-sizing: border-box; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; border: 2px solid transparent; }
+        .item-card:hover, .item-card:active { border-color: #d35400; background-color: #fdf2e9; }
+        .item-card h4 { margin: 0 0 5px; color: #333; font-size: 14px; line-height: 1.2; }
+        .stock-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; display: inline-block; margin-top: 5px; }
+        
+        /* Bottom: Cart Section */
+        .cart-section { flex: 1; min-height: 250px; background: white; padding: 15px; border-top: 2px solid #ddd; display: flex; flex-direction: column; }
+        .cart-items { flex: 1; overflow-y: auto; margin-bottom: 10px; border-bottom: 2px solid #eee; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
         .cart-item-info { display: flex; flex-direction: column; }
-        .remove-btn { color: red; background: none; border: none; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .total-box { font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: right; color: #2c3e50; }
-        .complete-btn { background: #27ae60; color: white; padding: 15px; font-size: 18px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; }
+        .remove-btn { color: red; background: none; border: none; cursor: pointer; font-size: 22px; font-weight: bold; padding: 0 5px; }
+        .total-box { font-size: 18px; font-weight: bold; margin-bottom: 10px; text-align: right; color: #2c3e50; }
+        .complete-btn { background: #27ae60; color: white; padding: 12px; font-size: 16px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; }
         .complete-btn:disabled { background: #95a5a6; cursor: not-allowed; }
+
+        /* Desktop Adjustments (keeps it nice if opened on PC) */
+        @media (min-width: 768px) {
+            .main-container { flex-direction: row; }
+            .menu-section { flex: 2; padding: 20px; }
+            .item-card { width: calc(33.333% - 10px); padding: 15px; }
+            .cart-section { flex: 1; border-top: none; border-left: 2px solid #ddd; }
+        }
     </style>
 </head>
 <body>
     <header>
-        <h2>Billing POS</h2>
-        <div>
+        <h2 style="margin:0; font-size:18px;">Billing POS</h2>
+        <div class="header-buttons">
             <button class="logout-btn" id="logout-btn">Logout</button>
-            <a href="owner.html" class="owner-btn">Owner Dashboard</a>
+            <a href="owner.html" class="owner-btn">Owner</a>
         </div>
     </header>
     <div class="main-container">
+        <!-- Top on mobile: Items -->
         <div class="menu-section" id="pos-menu"></div>
+        
+        <!-- Bottom on mobile: Cart -->
         <div class="cart-section">
-            <h2>Current Order</h2>
             <div class="cart-items" id="cart-list"></div>
             <div class="total-box">Total: ₹<span id="cart-total">0</span></div>
             <button class="complete-btn" id="complete-btn">Complete Payment</button>
