@@ -26,37 +26,27 @@ async function loadMenu() {
 
     itemsArray.forEach(item => {
         const currentStock = item.stock || 0;
-        const isOutOfStock = currentStock <= 0;
         
-        // NEW: Splits the price whether you type "9,14" OR "9/14"
+        // Splits the price whether you type "9,14" OR "9/14"
         const priceList = item.price.toString().split(/[,\/]/);
 
         priceList.forEach(priceStr => {
             const basePrice = Number(priceStr.trim());
-            if (isNaN(basePrice) || basePrice === 0) return; // Skip if empty or invalid
+            if (isNaN(basePrice) || basePrice === 0) return;
 
             const card = document.createElement('div');
             card.className = 'item-card';
             
-            // If out of stock, grey it out
-            if (isOutOfStock) {
-                card.style.opacity = '0.5';
-                card.style.borderColor = '#ccc';
-                card.style.cursor = 'not-allowed';
-            }
-            
+            // We removed the grey-out effect, so it always looks clickable
             card.innerHTML = `
                 <h4>${item.name}</h4>
                 <p style="margin:0; color:#d35400; font-weight:bold; font-size:16px;">₹${basePrice}</p>
-                <span class="stock-badge" style="background:${isOutOfStock ? '#7f8c8d' : '#e74c3c'}">Stock: ${currentStock}</span>
+                <span class="stock-badge" style="background:${currentStock <= 0 ? '#7f8c8d' : '#e74c3c'}">Stock: ${currentStock}</span>
             `;
             
+            // Allow adding to cart regardless of stock level
             card.onclick = () => {
-                if (isOutOfStock) {
-                    alert(`${item.name} is currently out of stock!`);
-                } else {
-                    addToCart(item, basePrice, currentStock);
-                }
+                addToCart(item, basePrice, currentStock);
             };
             
             posMenu.appendChild(card);
@@ -65,16 +55,7 @@ async function loadMenu() {
 }
 
 function addToCart(item, selectedPrice, currentStock) {
-    let totalInCart = 0;
-    cart.forEach(c => {
-        if (c.id === item.id) totalInCart += c.qty;
-    });
-
-    if (totalInCart >= currentStock) {
-        alert(`You only have ${currentStock} of ${item.name} left in stock!`);
-        return;
-    }
-
+    // We removed the blocker here, so it will always add to cart
     const existing = cart.find(c => c.id === item.id && c.price === selectedPrice);
     if (existing) {
         existing.qty++;
@@ -138,7 +119,8 @@ document.getElementById('complete-btn').addEventListener('click', async () => {
         });
 
         for (const [itemId, data] of Object.entries(stockDeductions)) {
-            const newStock = Math.max(0, data.currentStock - data.totalQtyToDeduct);
+            // We removed the Math.max(0) limit, so this will now calculate negative numbers (e.g. 0 - 2 = -2)
+            const newStock = data.currentStock - data.totalQtyToDeduct;
             await updateDoc(doc(db, "items", itemId), { stock: newStock });
         }
 
