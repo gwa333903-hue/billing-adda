@@ -44,22 +44,37 @@ function applyFilter() {
 function renderTransactions(txList) {
     const tbody = document.getElementById('tx-list');
     let totalSales = 0;
+    let cashSales = 0;
+    let onlineSales = 0;
     tbody.innerHTML = '';
     
     txList.forEach(tx => {
-        totalSales += tx.totalAmount;
+        const amount = tx.totalAmount || 0;
+        totalSales += amount;
+        
+        // If it's an old transaction without a paymentMethod, we default it to cash
+        const method = tx.paymentMethod || 'cash';
+        if (method === 'cash') cashSales += amount;
+        if (method === 'online') onlineSales += amount;
+
         const dateStr = new Date(tx.date).toLocaleDateString() + ' ' + new Date(tx.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const itemsStr = tx.items.map(i => `${i.name} (x${i.qty})`).join('<br>');
+        
+        // Badge style based on method
+        const badgeClass = method === 'cash' ? 'badge-cash' : 'badge-online';
         
         tbody.innerHTML += `
             <tr>
                 <td style="font-size:12px; color:#555;">${dateStr}</td>
                 <td style="font-size:14px;">${itemsStr}</td>
-                <td style="font-weight:bold; color:#2c3e50;">₹${tx.totalAmount}</td>
+                <td><span class="method-badge ${badgeClass}">${method}</span></td>
+                <td style="font-weight:bold; color:#2c3e50;">₹${amount}</td>
             </tr>
         `;
     });
     
+    document.getElementById('sales-cash').textContent = cashSales;
+    document.getElementById('sales-online').textContent = onlineSales;
     document.getElementById('sales-total').textContent = totalSales;
 }
 
@@ -98,7 +113,6 @@ async function loadStock() {
         catItems.forEach(item => {
             const currentStock = item.stock || 0;
             
-            // Pass the item name safely into the onClick function
             tbody.innerHTML += `
                 <tr>
                     <td>
@@ -118,7 +132,6 @@ async function loadStock() {
     });
 }
 
-// Function now requires itemName so it can log it
 window.updateItemStock = async (itemId, itemName, currentStock) => {
     const inputField = document.getElementById(`add-stock-${itemId}`);
     const addedStock = Number(inputField.value);
@@ -128,10 +141,8 @@ window.updateItemStock = async (itemId, itemName, currentStock) => {
     try {
         const newStock = currentStock + addedStock;
         
-        // 1. Update the actual stock
         await updateDoc(doc(db, "items", itemId), { stock: newStock });
         
-        // 2. Add a record to the stock history log
         await addDoc(collection(db, "stock_logs"), {
             itemId: itemId,
             itemName: itemName,

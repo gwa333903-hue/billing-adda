@@ -16,7 +16,6 @@
         
         .menu-section { flex: 1.5; padding: 10px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; background: #eaeaec; }
         
-        /* New Category Header Style */
         .category-title { width: 100%; margin: 15px 0 5px 0; color: #2c3e50; border-bottom: 2px solid #bdc3c7; font-size: 18px; padding-bottom: 5px; font-weight: bold; }
         
         .item-card { background: white; padding: 12px 8px; border-radius: 8px; width: calc(50% - 5px); box-sizing: border-box; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; border: 2px solid transparent; }
@@ -32,6 +31,14 @@
         .total-box { font-size: 18px; font-weight: bold; margin-bottom: 10px; text-align: right; color: #2c3e50; }
         .complete-btn { background: #27ae60; color: white; padding: 12px; font-size: 16px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; }
         .complete-btn:disabled { background: #95a5a6; cursor: not-allowed; }
+
+        /* Modal Styles */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 350px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-align: center; }
+        .payment-options { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
+        .pay-method-btn { flex: 1; padding: 15px; border: 2px solid #ccc; border-radius: 8px; background: white; font-size: 16px; font-weight: bold; cursor: pointer; color: #333; }
+        .pay-method-btn.selected { border-color: #27ae60; background: #eafaf1; color: #27ae60; }
+        .cancel-btn { background: #e74c3c; color: white; padding: 12px; font-size: 16px; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
 
         @media (min-width: 768px) {
             .main-container { flex-direction: row; }
@@ -54,9 +61,26 @@
         <div class="cart-section">
             <div class="cart-items" id="cart-list"></div>
             <div class="total-box">Total: ₹<span id="cart-total">0</span></div>
-            <button class="complete-btn" id="complete-btn">Complete Payment</button>
+            <button class="complete-btn" id="billing-btn">Billing</button>
         </div>
     </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 style="margin: 0; color: #2c3e50;">Select Payment Method</h3>
+            <h2 style="margin: 5px 0 15px 0; color: #27ae60;">Total: ₹<span id="modal-total-amount">0</span></h2>
+            
+            <div class="payment-options">
+                <button id="pay-cash" class="pay-method-btn" data-method="cash">Cash</button>
+                <button id="pay-online" class="pay-method-btn" data-method="online">Online</button>
+            </div>
+            
+            <button id="confirm-payment-btn" class="complete-btn" disabled>Complete Payment</button>
+            <button id="cancel-payment-btn" class="cancel-btn">Cancel</button>
+        </div>
+    </div>
+
     <script type="module" src="billing.js"></script>
 </body>
 </html>

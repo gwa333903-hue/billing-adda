@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, doc, updateDoc } from "https://www.gstatic
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
 let cart = [];
+let selectedPaymentMethod = null;
 
 onAuthStateChanged(auth, (user) => {
     if (!user) window.location.href = "index.html";
@@ -13,7 +14,6 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 });
 
 async function loadMenu() {
-    // 1. Fetch Categories
     const catSnapshot = await getDocs(collection(db, "categories"));
     let categoriesList = [];
     catSnapshot.forEach(doc => { 
@@ -21,7 +21,6 @@ async function loadMenu() {
     });
     categoriesList.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
-    // 2. Fetch Items
     const itemSnapshot = await getDocs(collection(db, "items"));
     const items = [];
     itemSnapshot.forEach(doc => { items.push({ id: doc.id, ...doc.data() }); });
@@ -29,12 +28,10 @@ async function loadMenu() {
     const posMenu = document.getElementById('pos-menu');
     posMenu.innerHTML = '';
 
-    // 3. Render Items Category-wise
     categoriesList.forEach(cat => {
         let catItems = items.filter(item => item.categoryId === cat.id);
         if (catItems.length === 0) return;
 
-        // Sort items within the category
         catItems.sort((a, b) => {
             const itemOrderA = Number(a.order) || 0;
             const itemOrderB = Number(b.order) || 0;
@@ -42,13 +39,11 @@ async function loadMenu() {
             return a.name.localeCompare(b.name);
         });
 
-        // Add Category Header
         const catHeader = document.createElement('h3');
         catHeader.className = 'category-title';
         catHeader.textContent = cat.name;
         posMenu.appendChild(catHeader);
 
-        // Add Item Cards
         catItems.forEach(item => {
             const currentStock = item.stock || 0;
             const priceList = item.price.toString().split(/[,\/]/);
@@ -111,22 +106,67 @@ window.removeFromCart = (index) => {
     renderCart();
 }
 
-document.getElementById('complete-btn').addEventListener('click', async () => {
+// --- MODAL LOGIC ---
+const modal = document.getElementById('payment-modal');
+const btnCash = document.getElementById('pay-cash');
+const btnOnline = document.getElementById('pay-online');
+const btnConfirm = document.getElementById('confirm-payment-btn');
+
+document.getElementById('billing-btn').addEventListener('click', () => {
     if (cart.length === 0) return alert("Cart is empty!");
     
-    const btn = document.getElementById('complete-btn');
-    btn.textContent = "Processing...";
-    btn.disabled = true;
+    // Calculate total for modal display
+    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    document.getElementById('modal-total-amount').textContent = total;
+    
+    // Reset modal state
+    selectedPaymentMethod = null;
+    btnCash.classList.remove('selected');
+    btnOnline.classList.remove('selected');
+    btnConfirm.disabled = true;
+    
+    modal.style.display = 'flex';
+});
+
+document.getElementById('cancel-payment-btn').addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    btnConfirm.disabled = false;
+    
+    if (method === 'cash') {
+        btnCash.classList.add('selected');
+        btnOnline.classList.remove('selected');
+    } else {
+        btnOnline.classList.add('selected');
+        btnCash.classList.remove('selected');
+    }
+}
+
+btnCash.addEventListener('click', () => selectPaymentMethod('cash'));
+btnOnline.addEventListener('click', () => selectPaymentMethod('online'));
+
+// --- COMPLETE PAYMENT ---
+btnConfirm.addEventListener('click', async () => {
+    if (cart.length === 0 || !selectedPaymentMethod) return;
+    
+    btnConfirm.textContent = "Processing...";
+    btnConfirm.disabled = true;
 
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         
+        // Save the transaction WITH the payment method
         await addDoc(collection(db, "transactions"), {
             date: new Date().toISOString(),
             items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
-            totalAmount: total
+            totalAmount: total,
+            paymentMethod: selectedPaymentMethod // 'cash' or 'online'
         });
 
+        // Deduct Stock
         const stockDeductions = {};
         cart.forEach(c => {
             if (!stockDeductions[c.id]) {
@@ -140,7 +180,7 @@ document.getElementById('complete-btn').addEventListener('click', async () => {
             await updateDoc(doc(db, "items", itemId), { stock: newStock });
         }
 
-        alert("Payment Complete!");
+        modal.style.display = 'none';
         cart = [];
         renderCart();
         loadMenu(); 
@@ -148,8 +188,8 @@ document.getElementById('complete-btn').addEventListener('click', async () => {
         console.error(err);
         alert("Transaction Failed.");
     } finally {
-        btn.textContent = "Complete Payment";
-        btn.disabled = false;
+        btnConfirm.textContent = "Complete Payment";
+        btnConfirm.disabled = false;
     }
 });
 
