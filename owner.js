@@ -3,13 +3,11 @@ import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/fir
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
 onAuthStateChanged(auth, (user) => {
-    if (!user || user.email !== 'adda@adda.com') window.location.href = "login.html";
+    if (!user) window.location.href = "index.html";
 });
 
 let allTransactions = [];
-let allItems = [];
 
-// --- Transaction Logic ---
 async function loadTransactions() {
     const snapshot = await getDocs(collection(db, "transactions"));
     allTransactions = [];
@@ -17,7 +15,6 @@ async function loadTransactions() {
         allTransactions.push(docSnap.data());
     });
     
-    // Sort newest first
     allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
     applyFilter();
 }
@@ -37,7 +34,7 @@ function applyFilter() {
         const todayStr = now.toISOString().split('T')[0];
         filtered = filtered.filter(tx => tx.date.startsWith(todayStr));
     } else if (timeFilter === 'month') {
-        const monthStr = now.toISOString().substring(0, 7); // YYYY-MM
+        const monthStr = now.toISOString().substring(0, 7); 
         filtered = filtered.filter(tx => tx.date.startsWith(monthStr));
     }
 
@@ -51,14 +48,14 @@ function renderTransactions(txList) {
     
     txList.forEach(tx => {
         totalSales += tx.totalAmount;
-        const dateStr = new Date(tx.date).toLocaleString();
-        const itemsStr = tx.items.map(i => `${i.name}(x${i.qty})`).join(', ');
+        const dateStr = new Date(tx.date).toLocaleDateString() + ' ' + new Date(tx.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const itemsStr = tx.items.map(i => `${i.name} (x${i.qty})`).join('<br>');
         
         tbody.innerHTML += `
             <tr>
                 <td style="font-size:12px; color:#555;">${dateStr}</td>
-                <td>${itemsStr}</td>
-                <td style="font-weight:bold;">₹${tx.totalAmount}</td>
+                <td style="font-size:14px;">${itemsStr}</td>
+                <td style="font-weight:bold; color:#2c3e50;">₹${tx.totalAmount}</td>
             </tr>
         `;
     });
@@ -66,37 +63,46 @@ function renderTransactions(txList) {
     document.getElementById('sales-total').textContent = totalSales;
 }
 
-// --- Stock Management Logic ---
 async function loadStock() {
     const snapshot = await getDocs(collection(db, "items"));
-    allItems = [];
     const tbody = document.getElementById('stock-list');
     tbody.innerHTML = '';
 
+    let itemsArray = [];
     snapshot.forEach(docSnap => {
-        const item = { id: docSnap.id, ...docSnap.data() };
-        allItems.push(item);
-        const currentStock = item.stock || 0;
+        itemsArray.push({ id: docSnap.id, ...docSnap.data() });
+    });
 
+    itemsArray.sort((a, b) => a.name.localeCompare(b.name));
+
+    itemsArray.forEach(item => {
+        const currentStock = item.stock || 0;
         tbody.innerHTML += `
             <tr>
                 <td><strong>${item.name}</strong></td>
-                <td>${currentStock}</td>
-                <td><input type="number" id="add-stock-${item.id}" placeholder="Qty" style="width: 60px;"></td>
-                <td><button onclick="window.updateItemStock('${item.id}', ${currentStock})" style="background:#2ecc71;">Update</button></td>
+                <td style="text-align:center;">
+                    <span style="background:${currentStock > 5 ? '#eafaf1' : '#fdedec'}; padding:4px 8px; border-radius:4px;">
+                        ${currentStock}
+                    </span>
+                </td>
+                <td><input type="number" id="add-stock-${item.id}" placeholder="Qty" style="width: 70px;"></td>
+                <td><button class="update-btn" onclick="window.updateItemStock('${item.id}', ${currentStock})">Update</button></td>
             </tr>
         `;
     });
 }
 
 window.updateItemStock = async (itemId, currentStock) => {
-    const addedStock = Number(document.getElementById(`add-stock-${itemId}`).value);
-    if (!addedStock || addedStock <= 0) return alert("Enter a valid quantity to add.");
+    const inputField = document.getElementById(`add-stock-${itemId}`);
+    const addedStock = Number(inputField.value);
+    
+    if (!addedStock || addedStock <= 0) return alert("Enter a valid quantity.");
     
     try {
         const newStock = currentStock + addedStock;
         await updateDoc(doc(db, "items", itemId), { stock: newStock });
-        loadStock(); // Refresh list
+        inputField.value = '';
+        loadStock(); 
     } catch (err) {
         console.error(err);
         alert("Failed to update stock.");

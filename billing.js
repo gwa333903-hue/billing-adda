@@ -1,12 +1,16 @@
 import { db, auth } from './firebase-config.js';
 import { collection, getDocs, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
 let items = [];
 let cart = [];
 
 onAuthStateChanged(auth, (user) => {
-    if (!user || user.email !== 'adda@adda.com') window.location.href = "login.html";
+    if (!user) window.location.href = "index.html";
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+    signOut(auth).then(() => window.location.href = "index.html");
 });
 
 async function loadMenu() {
@@ -19,7 +23,6 @@ async function loadMenu() {
         const item = { id: docSnap.id, ...docSnap.data() };
         items.push(item);
         
-        // Use first price if multiple are separated by comma
         const basePrice = Number(item.price.toString().split(',')[0]);
         const currentStock = item.stock || 0;
 
@@ -27,7 +30,7 @@ async function loadMenu() {
         card.className = 'item-card';
         card.innerHTML = `
             <h4>${item.name}</h4>
-            <p>₹${basePrice}</p>
+            <p style="margin:0; color:#555;">₹${basePrice}</p>
             <span class="stock-badge">Stock: ${currentStock}</span>
         `;
         card.onclick = () => addToCart(item, basePrice);
@@ -55,9 +58,14 @@ function renderCart() {
         total += itemTotal;
         list.innerHTML += `
             <div class="cart-item">
-                <span>${c.name} (x${c.qty})</span>
-                <span>₹${itemTotal}</span>
-                <button onclick="window.removeFromCart(${index})" style="color:red; border:none; background:none; cursor:pointer;">X</button>
+                <div class="cart-item-info">
+                    <strong>${c.name}</strong>
+                    <span style="font-size:14px; color:#666;">₹${c.price} x ${c.qty}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <strong>₹${itemTotal}</strong>
+                    <button class="remove-btn" onclick="window.removeFromCart(${index})">×</button>
+                </div>
             </div>
         `;
     });
@@ -79,14 +87,12 @@ document.getElementById('complete-btn').addEventListener('click', async () => {
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         
-        // 1. Record Transaction
         await addDoc(collection(db, "transactions"), {
             date: new Date().toISOString(),
             items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
             totalAmount: total
         });
 
-        // 2. Deduct Stock
         for (const cartItem of cart) {
             const newStock = Math.max(0, cartItem.currentStock - cartItem.qty);
             await updateDoc(doc(db, "items", cartItem.id), { stock: newStock });
@@ -95,7 +101,7 @@ document.getElementById('complete-btn').addEventListener('click', async () => {
         alert("Payment Complete!");
         cart = [];
         renderCart();
-        loadMenu(); // Refresh stock UI
+        loadMenu(); 
     } catch (err) {
         console.error(err);
         alert("Transaction Failed.");

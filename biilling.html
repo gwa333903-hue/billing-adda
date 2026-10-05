@@ -3,27 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adda Billing</title>
+    <title>Adda | Billing POS</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; margin: 0; display: flex; height: 100vh; }
-        .menu-section { flex: 2; padding: 20px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
-        .item-card { background: white; padding: 15px; border-radius: 8px; width: 140px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-        .item-card:hover { border: 2px solid #d35400; }
-        .stock-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; }
-        .cart-section { flex: 1; background: white; padding: 20px; border-left: 2px solid #ddd; display: flex; flex-direction: column; }
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .owner-btn { background: #e74c3c; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; }
+        .owner-btn:hover { background: #c0392b; }
+        .logout-btn { background: transparent; color: #ccc; border: 1px solid #ccc; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .menu-section { flex: 2; padding: 20px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 15px; align-content: flex-start; }
+        .item-card { background: white; padding: 15px; border-radius: 8px; width: calc(33% - 15px); min-width: 120px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; border: 2px solid transparent; }
+        .item-card:hover { border-color: #d35400; }
+        .item-card h4 { margin: 0 0 10px; color: #333; }
+        .stock-badge { background: #e74c3c; color: white; padding: 3px 8px; border-radius: 10px; font-size: 12px; display: inline-block; margin-top: 5px; }
+        
+        .cart-section { flex: 1; min-width: 300px; background: white; padding: 20px; border-left: 2px solid #ddd; display: flex; flex-direction: column; }
         .cart-items { flex: 1; overflow-y: auto; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-        .cart-item { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .total-box { font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: right; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+        .cart-item-info { display: flex; flex-direction: column; }
+        .remove-btn { color: red; background: none; border: none; cursor: pointer; font-size: 18px; font-weight: bold; }
+        .total-box { font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: right; color: #2c3e50; }
         .complete-btn { background: #27ae60; color: white; padding: 15px; font-size: 18px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; }
+        .complete-btn:disabled { background: #95a5a6; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <div class="menu-section" id="pos-menu"></div>
-    <div class="cart-section">
-        <h2>Current Order</h2>
-        <div class="cart-items" id="cart-list"></div>
-        <div class="total-box">Total: ₹<span id="cart-total">0</span></div>
-        <button class="complete-btn" id="complete-btn">Complete Payment</button>
+    <header>
+        <h2>Billing POS</h2>
+        <div>
+            <button class="logout-btn" id="logout-btn">Logout</button>
+            <a href="owner.html" class="owner-btn">Owner Dashboard</a>
+        </div>
+    </header>
+    <div class="main-container">
+        <div class="menu-section" id="pos-menu"></div>
+        <div class="cart-section">
+            <h2>Current Order</h2>
+            <div class="cart-items" id="cart-list"></div>
+            <div class="total-box">Total: ₹<span id="cart-total">0</span></div>
+            <button class="complete-btn" id="complete-btn">Complete Payment</button>
+        </div>
     </div>
     <script type="module" src="billing.js"></script>
 </body>
