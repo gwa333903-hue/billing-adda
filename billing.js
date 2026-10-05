@@ -106,24 +106,25 @@ window.removeFromCart = (index) => {
     renderCart();
 }
 
-// --- MODAL LOGIC ---
+// --- MODAL LOGIC WITH UPI QR CODE ---
 const modal = document.getElementById('payment-modal');
 const btnCash = document.getElementById('pay-cash');
 const btnOnline = document.getElementById('pay-online');
 const btnConfirm = document.getElementById('confirm-payment-btn');
+const qrContainer = document.getElementById('upi-qr-container');
+const qrcodeDiv = document.getElementById('qrcode');
 
 document.getElementById('billing-btn').addEventListener('click', () => {
     if (cart.length === 0) return alert("Cart is empty!");
     
-    // Calculate total for modal display
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
     document.getElementById('modal-total-amount').textContent = total;
     
-    // Reset modal state
     selectedPaymentMethod = null;
     btnCash.classList.remove('selected');
     btnOnline.classList.remove('selected');
     btnConfirm.disabled = true;
+    qrContainer.style.display = 'none';
     
     modal.style.display = 'flex';
 });
@@ -139,9 +140,26 @@ function selectPaymentMethod(method) {
     if (method === 'cash') {
         btnCash.classList.add('selected');
         btnOnline.classList.remove('selected');
+        qrContainer.style.display = 'none'; // Hide QR Code
     } else {
         btnOnline.classList.add('selected');
         btnCash.classList.remove('selected');
+        
+        // Generate UPI QR Code
+        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const upiLink = `upi://pay?pa=9883824529-3@axl&pn=Ankit_Sarkar&am=${total}&cu=INR`;
+        
+        qrcodeDiv.innerHTML = ''; // Clear previous QR
+        new QRCode(qrcodeDiv, {
+            text: upiLink,
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+        
+        qrContainer.style.display = 'flex'; // Show QR Code
     }
 }
 
@@ -158,15 +176,13 @@ btnConfirm.addEventListener('click', async () => {
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         
-        // Save the transaction WITH the payment method
         await addDoc(collection(db, "transactions"), {
             date: new Date().toISOString(),
             items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
             totalAmount: total,
-            paymentMethod: selectedPaymentMethod // 'cash' or 'online'
+            paymentMethod: selectedPaymentMethod 
         });
 
-        // Deduct Stock
         const stockDeductions = {};
         cart.forEach(c => {
             if (!stockDeductions[c.id]) {
