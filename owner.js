@@ -2,10 +2,9 @@ import { db, auth } from './firebase-config.js';
 import { collection, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-// STRICT SECURITY: Only allow adda@adda.com to view the dashboard
 onAuthStateChanged(auth, (user) => {
-    if (!user || user.email !== 'adda@adda.com') {
-        window.location.href = "ownerlogin.html"; // Redirects to the new owner login page
+    if (!user || user.email !== 'owner@adda.com') {
+        window.location.href = "ownerlogin.html"; 
     }
 });
 
