@@ -12,13 +12,10 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     btn.disabled = true;
 
     try {
-        // Sign out the current staff session first to prevent conflicts
         await signOut(auth);
         
-        // Log in the owner
         await signInWithEmailAndPassword(auth, email, password);
         
-        // Success! Redirect to the dashboard
         window.location.href = "owner.html";
     } catch (err) {
         console.error(err);
