@@ -2,9 +2,8 @@ import { db, auth } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-// Allow ONLY Owner or Staff to view the page
 onAuthStateChanged(auth, (user) => {
-    if (!user || (user.email !== 'adda@adda.com' && user.email !== 'staff@adda.com')) {
+    if (!user || (user.email !== 'owner@adda.com' && user.email !== 'staff@adda.com')) {
         window.location.href = "index.html";
     }
 });
@@ -17,7 +16,6 @@ async function loadStockLogs() {
             logs.push(docSnap.data());
         });
 
-        // Sort newest first
         logs.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         const tbody = document.getElementById('log-list');
@@ -35,7 +33,7 @@ async function loadStockLogs() {
                 <tr>
                     <td style="font-size:13px; color:#555;">${dateStr}</td>
                     <td style="font-weight:bold; color:#2c3e50;">${log.itemName}</td>
-                    <td><span class="qty-badge">+${log.addedQty}</span></td>
+                    <td><span class="qty-badge" style="background:#2ecc71; color:white; padding:3px 6px; border-radius:4px;">+${log.addedQty}</span></td>
                 </tr>
             `;
         });
