@@ -47,7 +47,7 @@ async function loadMenu() {
         catItems.forEach(item => {
             const currentStock = item.stock || 0;
             
-            // Stock badge color: 0 -> Gray, Negative (< 0) -> Red, Positive (> 0) -> Green
+            // Stock badge color logic
             let stockBgColor = '#27ae60'; // Green
             if (currentStock === 0) {
                 stockBgColor = '#7f8c8d'; // Gray
