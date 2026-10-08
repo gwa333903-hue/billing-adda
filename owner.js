@@ -2,8 +2,11 @@ import { db, auth } from './firebase-config.js';
 import { collection, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
+// STRICT SECURITY: Only allow adda@adda.com to view the dashboard
 onAuthStateChanged(auth, (user) => {
-    if (!user) window.location.href = "index.html";
+    if (!user || user.email !== 'adda@adda.com') {
+        window.location.href = "ownerlogin.html"; // Redirects to the new owner login page
+    }
 });
 
 let allTransactions = [];
@@ -52,7 +55,6 @@ function renderTransactions(txList) {
         const amount = tx.totalAmount || 0;
         totalSales += amount;
         
-        // If it's an old transaction without a paymentMethod, we default it to cash
         const method = tx.paymentMethod || 'cash';
         if (method === 'cash') cashSales += amount;
         if (method === 'online') onlineSales += amount;
@@ -60,7 +62,6 @@ function renderTransactions(txList) {
         const dateStr = new Date(tx.date).toLocaleDateString() + ' ' + new Date(tx.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const itemsStr = tx.items.map(i => `${i.name} (x${i.qty})`).join('<br>');
         
-        // Badge style based on method
         const badgeClass = method === 'cash' ? 'badge-cash' : 'badge-online';
         
         tbody.innerHTML += `
